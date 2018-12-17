@@ -14,11 +14,10 @@ $ torctl
 
 usage:
 
-  torctl.sh init | start | stop | status | restart | ip | change | version
+  torctl.sh start | stop | status | restart | ip | change | version
 
 options:
 
-  init    - initialize and start tor
   start   - start tor and redirect all traffic through tor
   stop    - stop tor and redirect all traffic through clearnet
   status  - get tor service status
