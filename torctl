@@ -58,202 +58,193 @@ msg()
 # print info
 info()
 {
-	echo "${BLUE}[*]${NC} ${@}"
+  echo "${BLUE}[*]${NC} ${@}"
 }
 
 banner()
 {
-	echo -e "${REDB}--==[ torctl.sh by blackarch.org ]==--${NC}\n"
+  echo -e "${REDB}--==[ torctl.sh by blackarch.org ]==--${NC}\n"
 }
 
 version()
 {
-	echo "${VERSION}"
+  echo "${VERSION}"
 }
 
 checkroot()
 {
-	if [ $(id -u) -ne 0 ]; then
-		err "This script must be run as root"
-	fi
+  if [ $(id -u) -ne 0 ]; then
+      err "This script must be run as root"
+  fi
 }
 
 
 ip()
 {
-    IP=$(wget -qO- http://ipecho.net/plain)
-	msg "remote ip is: $IP"
+  IP=$(wget -qO- http://ipecho.net/plain)
+  msg "remote ip is: $IP"
 }
 
 start()
 {
-	# check if root
-	checkroot
+  # check if root
+  checkroot
+  if [[ $(systemctl is-active tor) != "active" ]]; then
+    warn "tor is not started"
+	info "starting tor"
+	systemctl start tor || err "unable to start tor service"
+    msg "started tor service"
+  fi
 
-    if [[ $(systemctl is-active tor) != "active" ]]; then
-        warn "tor is not started"
-		info "starting tor"
-		systemctl start tor || err "unable to start tor service"
-        msg "started tor service"
-	fi
+  if ! [ -f /tmp/iptables.rules ]; then
+      info "backing up iptables rules"
+      iptables-save > /tmp/iptables.rules
+      msg "backed up iptables rules"
+  fi
 
-	if ! [ -f /tmp/iptables.rules ]; then
-		info "backing up iptables rules"
-		iptables-save > /tmp/iptables.rules
-		msg "backed up iptables rules"
-	fi
+  iptables -F
+  iptables -t nat -F
 
-	iptables -F
-	iptables -t nat -F
+  # disable ipv6
+  info "disabling ipv6"
+  sysctl -w net.ipv6.conf.all.disable_ipv6=1 > "/dev/null"
+  sysctl -w net.ipv6.conf.default.disable_ipv6=1 > "/dev/null"
+  msg "disabled ipv6"
 
-	# disable ipv6
-    info "disabling ipv6"
-	sysctl -w net.ipv6.conf.all.disable_ipv6=1 > "/dev/null"
-	sysctl -w net.ipv6.conf.default.disable_ipv6=1 > "/dev/null"
-    msg "disabled ipv6"
+  info "redirecting all traffic through tor"
+  # set iptables nat
+  iptables -t nat -A OUTPUT -m owner --uid-owner $TOR_UID -j RETURN
+  # set dns redirect
+  iptables -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 5353
+  iptables -t nat -A OUTPUT -p tcp --dport 53 -j REDIRECT --to-ports 5353
+  iptables -t nat -A OUTPUT -p udp -m owner --uid-owner $TOR_UID -m udp --dport 53 -j REDIRECT --to-ports 5353
 
-    info "redirecting all traffic through tor"
+  # resolve .onion domains mapping 10.192.0.0/10 address space
+  iptables -t nat -A OUTPUT -p tcp -d 10.192.0.0/10 -j REDIRECT --to-ports $TOR_PORT
+  iptables -t nat -A OUTPUT -p udp -d 10.192.0.0/10 -j REDIRECT --to-ports $TOR_PORT
+  # exclude locals
+  for NET in $TOR_EXCLUDE 127.0.0.0/9 127.128.0.0/10; do
+      iptables -t nat -A OUTPUT -d $NET -j RETURN
+      iptables -A OUTPUT -d "$NET" -j ACCEPT
+  done
 
-	# set iptables nat
-	iptables -t nat -A OUTPUT -m owner --uid-owner $TOR_UID -j RETURN
-    
-    # set dns redirect
-    iptables -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 5353
-	iptables -t nat -A OUTPUT -p tcp --dport 53 -j REDIRECT --to-ports 5353
-    iptables -t nat -A OUTPUT -p udp -m owner --uid-owner $TOR_UID -m udp --dport 53 -j REDIRECT --to-ports 5353
+  # redirect all other output through tor
+  iptables -t nat -A OUTPUT -p tcp --syn -j REDIRECT --to-ports $TOR_PORT
+  iptables -t nat -A OUTPUT -p udp -j REDIRECT --to-ports $TOR_PORT
+  iptables -t nat -A OUTPUT -p icmp -j REDIRECT --to-ports $TOR_PORT
 
-	# resolve .onion domains mapping 10.192.0.0/10 address space
-	iptables -t nat -A OUTPUT -p tcp -d 10.192.0.0/10 -j REDIRECT --to-ports $TOR_PORT
-	iptables -t nat -A OUTPUT -p udp -d 10.192.0.0/10 -j REDIRECT --to-ports $TOR_PORT
+  # accept already established connections
+  iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-	# exclude locals
-	for NET in $TOR_EXCLUDE 127.0.0.0/9 127.128.0.0/10; do
-		iptables -t nat -A OUTPUT -d $NET -j RETURN
-		iptables -A OUTPUT -d "$NET" -j ACCEPT
-	done
-
-	# redirect all other output through tor
-    iptables -t nat -A OUTPUT -p tcp --syn -j REDIRECT --to-ports $TOR_PORT
-	iptables -t nat -A OUTPUT -p udp -j REDIRECT --to-ports $TOR_PORT
-	iptables -t nat -A OUTPUT -p icmp -j REDIRECT --to-ports $TOR_PORT
-
-	# accept already established connections
-	iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-
-	# allow only tor output
-	iptables -A OUTPUT -m owner --uid-owner $TOR_UID -j ACCEPT
-	iptables -A OUTPUT -j REJECT
-
-    msg "all traffic is being redirected through tor"
+  # allow only tor output
+  iptables -A OUTPUT -m owner --uid-owner $TOR_UID -j ACCEPT
+  iptables -A OUTPUT -j REJECT
+  msg "all traffic is being redirected through tor"
 }
 
 
 stop()
 {
-	# check if root
-	checkroot
+  # check if root
+  checkroot
 
-	iptables -F
-	iptables -t nat -F
-    
-    
-	if [ -f /tmp/iptables.rules ]; then
-		warn "restoring iptables rules"
-		iptables-restore < /tmp/iptables.rules
-		rm /tmp/iptables.rules
-		msg "restored iptables rules"
-	fi
+  iptables -F
+  iptables -t nat -F
+  if [ -f /tmp/iptables.rules ]; then
+      warn "restoring iptables rules"
+      iptables-restore < /tmp/iptables.rules
+      rm /tmp/iptables.rules
+      msg "restored iptables rules"
+  fi
 
-    # enable ipv6
-    info "enabling ipv6"
-	sysctl -w net.ipv6.conf.all.disable_ipv6=0 > "/dev/null"
-	sysctl -w net.ipv6.conf.default.disable_ipv6=0 > "/dev/null"
-
-	systemctl stop tor
+  # enable ipv6
+  info "enabling ipv6"
+  sysctl -w net.ipv6.conf.all.disable_ipv6=0 > "/dev/null"
+  sysctl -w net.ipv6.conf.default.disable_ipv6=0 > "/dev/null"
+  systemctl stop tor
 }
 
 
 change()
 {
-	checkroot
-	info "changing tor identity"
-	systemctl restart tor > "/dev/null"
-	msg "tor identity changed"
+  checkroot
+  info "changing tor identity"
+  systemctl restart tor > "/dev/null"
+  msg "tor identity changed"
 }
 
 
 status()
 {
-	checkroot
-	TORSTATUS=$(systemctl is-active tor)
-	info "tor service is: ${TORSTATUS}"
+  checkroot
+  TORSTATUS=$(systemctl is-active tor)
+  info "tor service is: ${TORSTATUS}"
 }
 
 init()
 {
-    checkroot
-	TORRC="/etc/tor/torrc"
-	TORRCRULES="\n# added by torctl\nVirtualAddrNetwork 10.192.0.0/10\nAutomapHostsOnResolve 1\nTransPort 9040\nDNSPort 5353"
-	warn "initializing torrc"
-	cp "$TORRC" "$TORRC.bak"
-	echo -e "${TORRCRULES}" >> "$TORRC"
-	msg "initialized torrc"
-    systemctl restart tor
+  checkroot
+  TORRC="/etc/tor/torrc"
+  TORRCRULES="\n# added by torctl\nVirtualAddrNetwork 10.192.0.0/10\nAutomapHostsOnResolve 1\nTransPort 9040\nDNSPort 5353"
+  warn "initializing torrc"
+  cp "$TORRC" "$TORRC.bak"
+  echo -e "${TORRCRULES}" >> "$TORRC"
+  msg "initialized torrc"
+  systemctl restart tor
 }
 
 usage()
 {
-	echo -e "usage:\n"
-	echo -e "  torctl.sh init | start | stop | status | restart | ip | change | version\n"
-	echo -e "options:\n"
-	echo -e "  init    - initialize and start tor"
-	echo -e "  start   - start tor and redirect all traffic through tor"
-	echo -e "  stop    - stop tor and redirect all traffic through clearnet"
-	echo -e "  status  - get tor service status"
-	echo -e "  restart - restart tor and traffic rules"
-	echo -e "  ip      - get remote ip"
-	echo -e "  change  - change tor identity"
-    echo -e "  version - print version of torctl and exit\n"
+  echo -e "usage:\n"
+  echo -e "  torctl.sh init | start | stop | status | restart | ip | change | version\n"
+  echo -e "options:\n"
+  echo -e "  init    - initialize and start tor"
+  echo -e "  start   - start tor and redirect all traffic through tor"
+  echo -e "  stop    - stop tor and redirect all traffic through clearnet"
+  echo -e "  status  - get tor service status"
+  echo -e "  restart - restart tor and traffic rules"
+  echo -e "  ip      - get remote ip"
+  echo -e "  change  - change tor identity"
+  echo -e "  version - print version of torctl and exit\n"
 }
 
 main()
 {
-	banner
-
-	case "$1" in
-	init)
-		init
-		start
-	;;
-	start)
-		start
-	;;
-	stop)
-		stop
-	;;
-	change)
-		change
-	;;
-	status)
-		status
-	;;
-	ip)
-		ip
-	;;
-	restart)
-		$0 stop
-		sleep 1
-		$0 start
-	;;
-	version)
-		version
-	;;
-   *)
-		usage
-		exit 1
-	;;
-	esac
-	exit 0
+  banner
+  case "$1" in
+      init)
+          init
+          start
+          ;;
+      start)
+          start
+          ;;
+      stop)
+          stop
+          ;;
+      change)
+          change
+          ;;
+      status)
+          status
+          ;;
+      ip)
+          ip
+          ;;
+      restart)
+          $0 stop
+          sleep 1
+          $0 start
+          ;;
+      version)
+          version
+          ;;
+      *)
+          usage
+          exit 1
+          ;;
+  esac
+  exit 0
 }
 
 # call main
