@@ -1,6 +1,7 @@
 ## Description
 
-Script to redirect all traffic through tor network
+Script to redirect all traffic through tor network including dns queries
+for anonymizing entire system
 
 ## Installation
 
