@@ -2,10 +2,11 @@
 
 ################################################################################
 #                                                                              #
-# torctl.sh - script to redirect all traffic through tor network               #
+# torctl.sh - redirect all traffic through tor network                         #
 #                                                                              #
 # DESCRIPTION                                                                  #
-# script to redirect all traffic through tor network                           #
+# Script to redirect all traffic through tor network including                 #
+# dns queries for anonymizing entire system                                    #
 #                                                                              #
 #                                                                              #
 # AUTHORS                                                                      #
@@ -14,7 +15,7 @@
 ################################################################################
 
 # torctl.sh version
-VERSION="torctl.sh v0.2"
+VERSION="torctl.sh v0.3"
 
 # exclude locals
 TOR_EXCLUDE="192.168.0.0/16 172.16.0.0/12 10.0.0.0/8"
@@ -80,11 +81,15 @@ checkroot()
   fi
 }
 
-
-ip()
+sysinfo()
 {
-  IP=$(wget -qO- http://ipecho.net/plain)
-  msg "remote ip is: $IP"
+  LADDR=$(ip route get 1.1.1.1)
+  LSRC=$(echo $LADDR | awk -F"src " 'NR==1{split($2,a," ");print a[1]}')
+  IFACE=$(echo $LADDR | awk -F"dev " 'NR==1{split($2,a," ");print a[1]}')
+  MAC=$(cat /sys/class/net/$IFACE/address)
+  RADDR=$(wget -qO- http://ipecho.net/plain)
+  msg "local ip: $LSRC (IFACE: $IFACE, MAC: $MAC)"
+  msg "remote ip: $RADDR"
 }
 
 start()
@@ -246,13 +251,13 @@ EOF
 usage()
 {
   echo -e "usage:\n"
-  echo -e "  torctl.sh start | stop | status | restart | ip | change | version\n"
+  echo -e "  torctl.sh start | stop | status | restart | info | change | version\n"
   echo -e "options:\n"
   echo -e "  start   - start tor and redirect all traffic through tor"
   echo -e "  stop    - stop tor and redirect all traffic through clearnet"
   echo -e "  status  - get tor service status"
   echo -e "  restart - restart tor and traffic rules"
-  echo -e "  ip      - get remote ip"
+  echo -e "  info    - get network information"
   echo -e "  change  - change tor identity"
   echo -e "  version - print version of torctl and exit\n"
 }
@@ -273,8 +278,8 @@ main()
       status)
           status
           ;;
-      ip)
-          ip
+      info)
+          sysinfo
           ;;
       restart)
           stop

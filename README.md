@@ -14,7 +14,7 @@ $ torctl
 
 usage:
 
-  torctl.sh start | stop | status | restart | ip | change | version
+  torctl.sh start | stop | status | restart | info | change | version
 
 options:
 
@@ -22,7 +22,7 @@ options:
   stop    - stop tor and redirect all traffic through clearnet
   status  - get tor service status
   restart - restart tor and traffic rules
-  ip      - get remote ip
+  info    - get network information
   change  - change tor identity
   version - print version of torctl and exit
 
