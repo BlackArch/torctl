@@ -1,0 +1,13 @@
+[Unit]
+Description=torctl memwipe service
+After=umount.target
+Before=shutdown.target reboot.target halt.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/bin/true
+ExecStop=/usr/bin/torctl wipe
+
+[Install]
+WantedBy=multi-user.target

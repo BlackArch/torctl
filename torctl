@@ -15,7 +15,7 @@
 ################################################################################
 
 # torctl.sh version
-VERSION="torctl.sh v0.4"
+VERSION="torctl.sh v0.5"
 
 # exclude locals
 TOR_EXCLUDE="192.168.0.0/16 172.16.0.0/12 10.0.0.0/8"
@@ -213,7 +213,11 @@ status()
 {
   checkroot
   TORSTATUS=$(systemctl is-active tor)
+  MEMWIPESTATUS=$(systemctl is-enabled torctl-memwipe)
+  AUTOSTARTSTATUS=$(systemctl is-enabled torctl-autostart)
   info "tor service is: ${TORSTATUS}"
+  info "torctl-memwipe service is: ${MEMWIPESTATUS}"
+  info "torctl-autostart service is: ${AUTOSTARTSTATUS}"
 }
 
 gentorrc()
@@ -251,25 +255,9 @@ EOF
 memwipe()
 {
   checkroot
-  warn "enabling memwipe"
-  SERVICE="/etc/systemd/system/memwipe.service"
-  cat > "${SERVICE}" << EOF
-[Unit]
-Description=torctl memwipe
-After=umount.target
-Before=shutdown.target reboot.target halt.target
-
-[Service]
-Type=oneshot
-RemainAfterExit=true
-ExecStart=/bin/true
-ExecStop=$(dirname `which $0`) wipe
-
-[Install]
-WantedBy=multi-user.target
-EOF
-  systemctl enable memwipe > "/dev/null"
-  msg "enabled memwipe"
+  warn "enabling torctl-memwipe"
+  systemctl enable torctl-memwipe > "/dev/null"
+  msg "enabled torctl-memwipe"
 }
 
 wipe()
@@ -283,19 +271,27 @@ wipe()
   smem-secure-delete -fllv
 }
 
+autostart()
+{
+  checkroot
+  warn "enabling torctl-autostart"
+  systemctl enable torctl-autostart > "/dev/null"
+  msg "enabled torctl-autostart"
+}
 usage()
 {
-  echo -e "usage:\n"
-  echo -e "  torctl.sh start | stop | status | restart | info | change | version\n"
-  echo -e "options:\n"
-  echo -e "  start   - start tor and redirect all traffic through tor"
-  echo -e "  stop    - stop tor and redirect all traffic through clearnet"
-  echo -e "  status  - get tor service status"
-  echo -e "  restart - restart tor and traffic rules"
-  echo -e "  memwipe - enable memory wipe at shutdown"
-  echo -e "  info    - get network information"
-  echo -e "  change  - change tor identity"
-  echo -e "  version - print version of torctl and exit\n"
+  echo -e "Usage: torctl.sh COMMAND\n"
+  echo -e "A script to redirect all traffic through tor network\n"
+  echo -e "Commands:"
+  echo -e "  start      - start tor and redirect all traffic through tor"
+  echo -e "  stop       - stop tor and redirect all traffic through clearnet"
+  echo -e "  status     - get tor service status"
+  echo -e "  restart    - restart tor and traffic rules"
+  echo -e "  memwipe    - enable memory wipe at shutdown"
+  echo -e "  autostart  - start torctl at startup"
+  echo -e "  info       - get network information"
+  echo -e "  change     - change tor identity"
+  echo -e "  version    - print version of torctl and exit\n"
 }
 
 main()
@@ -308,22 +304,25 @@ main()
       stop)
           stop
           ;;
-      change)
-          change
-          ;;
       status)
           status
-          ;;
-      memwipe)
-          memwipe
-          ;;
-      info)
-          sysinfo
           ;;
       restart)
           stop
           sleep 1
           start
+          ;;
+      memwipe)
+          memwipe
+          ;;
+      autostart)
+          autostart
+          ;;
+      info)
+          sysinfo
+          ;;
+      change)
+          change
           ;;
       version)
           version

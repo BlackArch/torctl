@@ -1,0 +1,12 @@
+[Unit]
+Description=torctl autostart service
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/torctl start
+ExecStop=/usr/bin/torctl stop
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

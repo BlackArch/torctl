@@ -13,20 +13,20 @@ for anonymizing entire system
 $ torctl
 --==[ torctl.sh by blackarch.org ]==--
 
-usage:
+Usage: torctl.sh COMMAND
 
-  torctl.sh start | stop | status | restart | info | change | version
+A script to redirect all traffic through tor network
 
-options:
-
-  start   - start tor and redirect all traffic through tor
-  stop    - stop tor and redirect all traffic through clearnet
-  status  - get tor service status
-  restart - restart tor and traffic rules
-  memwipe - enable memory wipe at shutdown
-  info    - get network information
-  change  - change tor identity
-  version - print version of torctl and exit
+Commands:
+  start      - start tor and redirect all traffic through tor
+  stop       - stop tor and redirect all traffic through clearnet
+  status     - get tor service status
+  restart    - restart tor and traffic rules
+  memwipe    - enable memory wipe at shutdown
+  autostart  - start torctl at startup
+  info       - get network information
+  change     - change tor identity
+  version    - print version of torctl and exit
 
 ```
 
