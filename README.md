@@ -23,6 +23,7 @@ options:
   stop    - stop tor and redirect all traffic through clearnet
   status  - get tor service status
   restart - restart tor and traffic rules
+  memwipe - enable memory wipe at shutdown
   info    - get network information
   change  - change tor identity
   version - print version of torctl and exit
