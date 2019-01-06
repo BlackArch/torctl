@@ -15,7 +15,7 @@
 ################################################################################
 
 # torctl.sh version
-VERSION="torctl.sh v0.3"
+VERSION="torctl.sh v0.4"
 
 # exclude locals
 TOR_EXCLUDE="192.168.0.0/16 172.16.0.0/12 10.0.0.0/8"
@@ -248,6 +248,41 @@ EOF
   msg "backed up tor config"
 }
 
+memwipe()
+{
+  checkroot
+  warn "enabling memwipe"
+  SERVICE="/etc/systemd/system/memwipe.service"
+  cat > "${SERVICE}" << EOF
+[Unit]
+Description=torctl memwipe
+After=umount.target
+Before=shutdown.target reboot.target halt.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/bin/true
+ExecStop=$(dirname `which $0`) wipe
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  systemctl enable memwipe > "/dev/null"
+  msg "enabled memwipe"
+}
+
+wipe()
+{
+  checkroot
+  echo 1024 > /proc/sys/vm/min_free_kbytes
+  echo 3  > /proc/sys/vm/drop_caches
+  echo 1  > /proc/sys/vm/oom_kill_allocating_task
+  echo 1  > /proc/sys/vm/overcommit_memory
+  echo 0 > /proc/sys/vm/oom_dump_tasks
+  smem-secure-delete -fllv
+}
+
 usage()
 {
   echo -e "usage:\n"
@@ -257,6 +292,7 @@ usage()
   echo -e "  stop    - stop tor and redirect all traffic through clearnet"
   echo -e "  status  - get tor service status"
   echo -e "  restart - restart tor and traffic rules"
+  echo -e "  memwipe - enable memory wipe at shutdown"
   echo -e "  info    - get network information"
   echo -e "  change  - change tor identity"
   echo -e "  version - print version of torctl and exit\n"
@@ -278,6 +314,9 @@ main()
       status)
           status
           ;;
+      memwipe)
+          memwipe
+          ;;
       info)
           sysinfo
           ;;
@@ -288,6 +327,9 @@ main()
           ;;
       version)
           version
+          ;;
+      wipe)
+          wipe
           ;;
       *)
           usage
