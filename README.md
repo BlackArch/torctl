@@ -25,7 +25,8 @@ Commands:
   memwipe    - enable memory wipe at shutdown
   autostart  - start torctl at startup
   info       - get network information
-  change     - change tor identity
+  chngid     - change tor identity
+  chngmac    - change active iface's mac (this will reset the iface)
   version    - print version of torctl and exit
 
 ```
