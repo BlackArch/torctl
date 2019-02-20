@@ -22,11 +22,10 @@ Commands:
   stop       - stop tor and redirect all traffic through clearnet
   status     - get tor service status
   restart    - restart tor and traffic rules
-  memwipe    - enable memory wipe at shutdown
+  autowipe   - enable memory wipe at shutdown
   autostart  - start torctl at startup
-  info       - get network information
+  ip         - get remote ip address
   chngid     - change tor identity
-  chngmac    - change active iface's mac (this will reset the iface)
   version    - print version of torctl and exit
 
 ```
