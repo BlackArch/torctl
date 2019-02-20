@@ -279,17 +279,17 @@ status()
 {
     checkroot
     TORSTATUS=$(systemctl is-active tor)
-    MEMWIPESTATUS=$(systemctl is-enabled torctl-memwipe)
+    AUTOWIPESTATUS=$(systemctl is-enabled torctl-autowipe)
     AUTOSTARTSTATUS=$(systemctl is-enabled torctl-autostart)
     if [[ "${TORSTATUS}" == "active" ]];then
         msg "tor service is: ${TORSTATUS}"
     else
         warn "tor service is: ${TORSTATUS}"
     fi
-    if [[ "${MEMWIPESTATUS}" == "enabled" ]];then
-        msg "torctl-memwipe service is: ${MEMWIPESTATUS}"
+    if [[ "${autowipeSTATUS}" == "enabled" ]];then
+        msg "torctl-autowipe service is: ${autowipeSTATUS}"
     else
-        warn "torctl-memwipe service is: ${MEMWIPESTATUS}"
+        warn "torctl-autowipe service is: ${autowipeSTATUS}"
     fi
     if [[ "${AUTOSTARTSTATUS}" == "enabled" ]];then
         msg "torctl-autostart service is: ${AUTOSTARTSTATUS}"
@@ -333,9 +333,9 @@ EOF
 autowipe()
 {
     checkroot
-    warn "enabling torctl-memwipe"
-    systemctl enable torctl-memwipe > "/dev/null"
-    msg "enabled torctl-memwipe"
+    warn "enabling torctl-autowipe"
+    systemctl enable torctl-autowipe > "/dev/null"
+    msg "enabled torctl-autowipe"
 }
 
 wipe()

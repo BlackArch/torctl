@@ -1,5 +1,5 @@
 [Unit]
-Description=torctl memwipe service
+Description=torctl autowipe service
 After=umount.target
 Before=shutdown.target reboot.target halt.target
 
