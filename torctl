@@ -15,7 +15,7 @@
 ################################################################################
 
 # torctl.sh version
-VERSION="torctl.sh v0.5.2"
+VERSION="torctl.sh v0.5.3"
 
 # exclude locals
 TOR_EXCLUDE="192.168.0.0/16 172.16.0.0/12 10.0.0.0/8"
@@ -103,16 +103,6 @@ checkroot()
     fi
 }
 
-getiface()
-{
-    echo $(echo ${@} | awk -F"dev " 'NR==1{split($2,a," ");print a[1]}')
-}
-
-getmac()
-{
-    echo $(cat /sys/class/net/${@}/address)
-}
-
 startservice()
 {
     SERVICE=${@}
@@ -141,14 +131,9 @@ stopservice()
     fi
 }
 
-sysinfo()
+ip()
 {
-    LADDR=$(ip route get 1.1.1.1)
-    LSRC=$(echo $LADDR | awk -F"src " 'NR==1{split($2,a," ");print a[1]}')
-    IFACE=$(getiface $LADDR)
-    MAC=$(getmac $IFACE)
     RADDR=$(wget -qO- http://ipecho.net/plain)
-    msg "local ip: $LSRC (IFACE: $IFACE, MAC: $MAC)"
     msg "remote ip: $RADDR"
 }
 
@@ -289,16 +274,6 @@ chngid()
     msg "tor identity changed"
 }
 
-chngmac()
-{
-    LADDR=$(ip route get 1.1.1.1)
-    IFACE=$(getiface $LADDR)
-    echo $IFACE
-    ifconfig $IFACE down
-    macchanger -r $IFACE > "/dev/null"
-    ifconfig $IFACE up
-}
-
 
 status()
 {
@@ -355,7 +330,7 @@ EOF
     msg "backed up tor config"
 }
 
-memwipe()
+autowipe()
 {
     checkroot
     warn "enabling torctl-memwipe"
@@ -398,11 +373,10 @@ usage()
     echo -e "  stop       - stop tor and redirect all traffic through clearnet"
     echo -e "  status     - get tor service status"
     echo -e "  restart    - restart tor and traffic rules"
-    echo -e "  memwipe    - enable memory wipe at shutdown"
+    echo -e "  autowipe   - enable memory wipe at shutdown"
     echo -e "  autostart  - start torctl at startup"
-    echo -e "  info       - get network information"
+    echo -e "  ip         - get remote ip address"
     echo -e "  chngid     - change tor identity"
-    echo -e "  chngmac    - change active iface's mac (this will reset the iface)"
     echo -e "  version    - print version of torctl and exit\n"
 }
 
@@ -425,20 +399,17 @@ main()
             sleep 1
             start
         ;;
-        memwipe)
-            memwipe
+        autowipe)
+            autowipe
         ;;
         autostart)
             autostart
         ;;
-        info)
-            sysinfo
+        ip)
+            ip
         ;;
         chngid)
             chngid
-        ;;
-        chngmac)
-            chngmac
         ;;
         version)
             version
