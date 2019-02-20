@@ -286,10 +286,10 @@ status()
     else
         warn "tor service is: ${TORSTATUS}"
     fi
-    if [[ "${autowipeSTATUS}" == "enabled" ]];then
-        msg "torctl-autowipe service is: ${autowipeSTATUS}"
+    if [[ "${AUTOWIPESTATUS}" == "enabled" ]];then
+        msg "torctl-autowipe service is: ${AUTOWIPESTATUS}"
     else
-        warn "torctl-autowipe service is: ${autowipeSTATUS}"
+        warn "torctl-autowipe service is: ${AUTOWIPESTATUS}"
     fi
     if [[ "${AUTOSTARTSTATUS}" == "enabled" ]];then
         msg "torctl-autostart service is: ${AUTOSTARTSTATUS}"
