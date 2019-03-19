@@ -1,11 +1,13 @@
 ## Description
 
 Script to redirect all traffic through tor network including dns queries
-for anonymizing entire system
+for anonymizing entire system (also includes mac spoofer)
 
 ## Installation
 
 `pacman -S torctl`
+
+`pacman -S macchanger`
 
 ## Usage
 
