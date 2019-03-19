@@ -28,6 +28,7 @@ Commands:
   autostart  - start torctl at startup
   ip         - get remote ip address
   chngid     - change tor identity
+  chngmac    - change mac adress
   version    - print version of torctl and exit
 
 ```
