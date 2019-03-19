@@ -150,17 +150,17 @@ is-started()
 chngmac()
 {
     ifconfig $INTERFACE down
-    macchanger -a $INTERFACE
+    macchanger -a $INTERFACE &> /dev/null
     ifconfig $INTERFACE up
     msg "mac adress changed"
 }
 
 revertmac()
 {
-ifconfig $INTERFACE down
-    macchanger -a $INTERFACE
+    ifconfig $INTERFACE down
+    macchanger -p $INTERFACE &> /dev/null
     ifconfig $INTERFACE up
-    msg "mac adress changed"
+    msg "mac adress reverted"
 }
 
 start()
@@ -230,7 +230,7 @@ start()
 
     touch $BACKUPDIR/started
     
-    changemac()
+    chngmac
 }
 
 stop()
@@ -243,7 +243,7 @@ stop()
         err "torctl is already stopped"
     fi
     
-    revertmac()
+    revertmac
 
     iptables -F
     iptables -t nat -F
