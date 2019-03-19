@@ -15,7 +15,7 @@
 ################################################################################
 
 # torctl.sh version
-VERSION="torctl.sh v0.5.3"
+VERSION="torctl.sh v0.5.4"
 
 # exclude locals
 TOR_EXCLUDE="192.168.0.0/16 172.16.0.0/12 10.0.0.0/8"
@@ -36,6 +36,8 @@ REDB=""
 YELLOW=""
 BLUE=""
 RESET=""
+
+INTERFACE=$(route | grep '^default' | grep -o '[^ ]*$')
 
 if [ -t 1 ];then
     if tput setaf 0 &>/dev/null; then
@@ -154,7 +156,7 @@ start()
     if is-started; then
         err "torctl is already started"
     fi
-
+    
     # generate new torrc
     gentorrc
 
@@ -211,6 +213,12 @@ start()
     msg "all traffic is being redirected through tor"
 
     touch $BACKUPDIR/started
+    
+    # change mac
+    ifconfig $INTERFACE down
+    macchanger -a $INTERFACE
+    ifconfig $INTERFACE up
+    msg "mac adress changed"
 }
 
 
@@ -223,6 +231,12 @@ stop()
     if ! is-started; then
         err "torctl is already stopped"
     fi
+    
+    # change mac
+    ifconfig $INTERFACE down
+    macchanger -p $INTERFACE
+    ifconfig $INTERFACE up
+    msg "mac adress restored"
 
     iptables -F
     iptables -t nat -F
