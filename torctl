@@ -147,6 +147,22 @@ is-started()
     return 1
 }
 
+chngmac()
+{
+    ifconfig $INTERFACE down
+    macchanger -a $INTERFACE
+    ifconfig $INTERFACE up
+    msg "mac adress changed"
+}
+
+revertmac()
+{
+ifconfig $INTERFACE down
+    macchanger -a $INTERFACE
+    ifconfig $INTERFACE up
+    msg "mac adress changed"
+}
+
 start()
 {
     # check if root
@@ -214,13 +230,8 @@ start()
 
     touch $BACKUPDIR/started
     
-    # change mac
-    ifconfig $INTERFACE down
-    macchanger -a $INTERFACE
-    ifconfig $INTERFACE up
-    msg "mac adress changed"
+    changemac()
 }
-
 
 stop()
 {
@@ -232,11 +243,7 @@ stop()
         err "torctl is already stopped"
     fi
     
-    # change mac
-    ifconfig $INTERFACE down
-    macchanger -p $INTERFACE
-    ifconfig $INTERFACE up
-    msg "mac adress restored"
+    revertmac()
 
     iptables -F
     iptables -t nat -F
@@ -391,6 +398,7 @@ usage()
     echo -e "  autostart  - start torctl at startup"
     echo -e "  ip         - get remote ip address"
     echo -e "  chngid     - change tor identity"
+    echo -e "  chngmac     - change mac adress"
     echo -e "  version    - print version of torctl and exit\n"
 }
 
@@ -424,6 +432,9 @@ main()
         ;;
         chngid)
             chngid
+        ;;
+        chngmac)
+            chngmac
         ;;
         version)
             version
