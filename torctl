@@ -563,7 +563,7 @@ usage() {
 main() {
     banner
 
-    check_backup_dir
+    check_root
 
     check_backup_dir
 
