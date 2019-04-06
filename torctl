@@ -15,7 +15,7 @@
 ################################################################################
 
 # torctl.sh version
-VERSION="torctl.sh v0.5.4"
+VERSION="torctl.sh v0.5.5"
 
 # exclude locals
 TOR_EXCLUDE="192.168.0.0/16 172.16.0.0/12 10.0.0.0/8"
@@ -593,47 +593,55 @@ usage() {
 main() {
     banner
 
-    check_root
-
     check_backup_dir
 
     case "$1" in
     start)
+        check_root
         start
         ;;
     stop)
+        check_root
         stop
         ;;
     status)
+        check_root
         status
         ;;
     restart)
+        check_root
         stop
         sleep 1
         start
         ;;
     autowipe)
+        check_root
         autowipe
         ;;
     autostart)
+        check_root
         autostart
         ;;
     ip)
         get_ip
         ;;
     chngid)
+        check_root
         chngid
         ;;
     chngmac)
+        check_root
         chngmac
         ;;
     rvmac)
+        check_root
         rvmac
         ;;
     version)
         version
         ;;
     wipe)
+        check_root
         wipe
         ;;
     *)
