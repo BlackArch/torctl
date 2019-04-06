@@ -137,10 +137,6 @@ is_started() {
     return 1
 }
 
-sysctl_apply_rule() {
-    sysctl -w ${@} &>"/dev/null"
-}
-
 flush_iptables() {
     iptables -F
     iptables -t nat -F
@@ -155,7 +151,7 @@ wipe() {
     smem-secure-delete -fllv
 }
 
-ip() {
+get_ip() {
     RADDR=$(wget -qO- http://ipecho.net/plain)
     msg "remote ip: $RADDR"
 }
@@ -193,7 +189,7 @@ restore_torrc() {
     fi
 }
 
-resolve_resolv_conf() {
+restore_resolv_conf() {
     if [ -e $BACKUPDIR/resolv.conf.bak ]; then
         warn "restoring nameservers"
         rm -f $BACKUPDIR/resolv.conf
@@ -227,6 +223,10 @@ gen_resolv_conf() {
 nameserver 127.0.0.1
 nameserver 1.1.1.1
 nameserver 1.0.0.1
+nameserver 208.67.222.222
+nameserver 208.67.220.220
+nameserver 8.8.8.8
+nameserver 8.8.4.4
 EOF
     chmod 644 /etc/resolv.conf
     msg "configured nameservers"
@@ -262,6 +262,7 @@ EOF
 
 apply_iptables_rules() {
     info "applying iptables rules"
+
     # set iptables nat
     iptables -t nat -A OUTPUT -m owner --uid-owner $TOR_UID -j RETURN
     # set dns redirect
@@ -289,6 +290,7 @@ apply_iptables_rules() {
     # allow only tor output
     iptables -A OUTPUT -m owner --uid-owner $TOR_UID -j ACCEPT
     iptables -A OUTPUT -j REJECT
+
     msg "applied iptables rules"
 }
 
@@ -296,125 +298,125 @@ apply_sysctl_rules() {
     info "applying sysctl rules"
 
     # Swappiness
-    sysctl_apply_rule vm.dirty_ratio=10
-    sysctl_apply_rule vm.dirty_background_ratio=5
-    sysctl_apply_rule vm.dirty_expire_centisecs=2000
-    sysctl_apply_rule vm.dirty_writeback_centisecs=1000
-    sysctl_apply_rule vm.swappiness=10
-    sysctl_apply_rule vm.vfs_cache_pressure=70
+    sysctl -w vm.dirty_ratio=10 &>"/dev/null"
+    sysctl -w vm.dirty_background_ratio=5 &>"/dev/null"
+    sysctl -w vm.dirty_expire_centisecs=2000 &>"/dev/null"
+    sysctl -w vm.dirty_writeback_centisecs=1000 &>"/dev/null"
+    sysctl -w vm.swappiness=10 &>"/dev/null"
+    sysctl -w vm.vfs_cache_pressure=70 &>"/dev/null"
 
     # Disable Explicit Congestion Notification in TCP
-    sysctl_apply_rule net.ipv4.tcp_ecn=0
+    sysctl -w net.ipv4.tcp_ecn=0 &>"/dev/null"
 
     # window scaling
-    sysctl_apply_rule net.ipv4.tcp_window_scaling=1
+    sysctl -w net.ipv4.tcp_window_scaling=1 &>"/dev/null"
 
     # increase linux autotuning tcp buffer limits
-    sysctl_apply_rule net.ipv4.tcp_rmem="8192 87380 16777216"
-    sysctl_apply_rule net.ipv4.tcp_wmem="8192 65536 16777216"
+    sysctl -w net.ipv4.tcp_rmem="8192 87380 16777216" &>"/dev/null"
+    sysctl -w net.ipv4.tcp_wmem="8192 65536 16777216" &>"/dev/null"
 
     # increase TCP max buffer size
-    sysctl_apply_rule net.core.rmem_max=16777216
-    sysctl_apply_rule net.core.wmem_max=16777216
+    sysctl -w net.core.rmem_max=16777216 &>"/dev/null"
+    sysctl -w net.core.wmem_max=16777216 &>"/dev/null"
 
     # Increase number of incoming connections backlog
-    sysctl_apply_rule net.core.netdev_max_backlog=16384
-    sysctl_apply_rule net.core.dev_weight=64
+    sysctl -w net.core.netdev_max_backlog=16384 &>"/dev/null"
+    sysctl -w net.core.dev_weight=64 &>"/dev/null"
 
     # Increase number of incoming connections
-    sysctl_apply_rule net.core.somaxconn=32768
+    sysctl -w net.core.somaxconn=32768 &>"/dev/null"
 
     # Increase the maximum amount of option memory buffers
-    sysctl_apply_rule net.core.optmem_max=65535
+    sysctl -w net.core.optmem_max=65535 &>"/dev/null"
 
     # Increase the tcp-time-wait buckets pool size to prevent simple DOS attacks
-    sysctl_apply_rule net.ipv4.tcp_max_tw_buckets=1440000
+    sysctl -w net.ipv4.tcp_max_tw_buckets=1440000 &>"/dev/null"
 
     # try to reuse time-wait connections, but don't recycle them
     # (recycle can break clients behind NAT)
-    sysctl_apply_rule net.ipv4.tcp_tw_reuse=1
+    sysctl -w net.ipv4.tcp_tw_reuse=1 &>"/dev/null"
 
     # Limit number of orphans, each orphan can eat up to 16M (max wmem)
     # of unswappable memory
-    sysctl_apply_rule net.ipv4.tcp_max_orphans=16384
-    sysctl_apply_rule net.ipv4.tcp_orphan_retries=0
+    sysctl -w net.ipv4.tcp_max_orphans=16384 &>"/dev/null"
+    sysctl -w net.ipv4.tcp_orphan_retries=0 &>"/dev/null"
 
     # don't cache ssthresh from previous connection
-    sysctl_apply_rule net.ipv4.tcp_no_metrics_save=1
-    sysctl_apply_rule net.ipv4.tcp_moderate_rcvbuf=1
+    sysctl -w net.ipv4.tcp_no_metrics_save=1 &>"/dev/null"
+    sysctl -w net.ipv4.tcp_moderate_rcvbuf=1 &>"/dev/null"
 
     # Increase size of RPC datagram queue length
-    sysctl_apply_rule net.unix.max_dgram_qlen=50
+    sysctl -w net.unix.max_dgram_qlen=50 &>"/dev/null"
 
     # Don't allow the arp table to become bigger than this
-    sysctl_apply_rule net.ipv4.neigh.default.gc_thresh3=2048
+    sysctl -w net.ipv4.neigh.default.gc_thresh3=2048 &>"/dev/null"
 
     # Tell the gc when to become aggressive with arp table cleaning.
     # Adjust this based on size of the LAN. 1024 is suitable for most
     # /24 networks
-    sysctl_apply_rule net.ipv4.neigh.default.gc_thresh2=1024
+    sysctl -w net.ipv4.neigh.default.gc_thresh2=1024 &>"/dev/null"
 
     # Adjust where the gc will leave arp table alone - set to 32.
-    sysctl_apply_rule net.ipv4.neigh.default.gc_thresh1=32
+    sysctl -w net.ipv4.neigh.default.gc_thresh1=32 &>"/dev/null"
 
     # Adjust to arp table gc to clean-up more often
-    sysctl_apply_rule net.ipv4.neigh.default.gc_interval=30
+    sysctl -w net.ipv4.neigh.default.gc_interval=30 &>"/dev/null"
 
     # Increase TCP queue length
-    sysctl_apply_rule net.ipv4.neigh.default.proxy_qlen=96
-    sysctl_apply_rule net.ipv4.neigh.default.unres_qlen=6
+    sysctl -w net.ipv4.neigh.default.proxy_qlen=96 &>"/dev/null"
+    sysctl -w net.ipv4.neigh.default.unres_qlen=6 &>"/dev/null"
 
     # Enable Explicit Congestion Notification (RFC 3168), disable it
     # if it doesn't work for you
-    sysctl_apply_rule net.ipv4.tcp_ecn=1
-    sysctl_apply_rule net.ipv4.tcp_reordering=3
+    sysctl -w net.ipv4.tcp_ecn=1 &>"/dev/null"
+    sysctl -w net.ipv4.tcp_reordering=3 &>"/dev/null"
 
     # How many times to retry killing an alive TCP connection
-    sysctl_apply_rule net.ipv4.tcp_retries2=15
-    sysctl_apply_rule net.ipv4.tcp_retries1=3
+    sysctl -w net.ipv4.tcp_retries2=15 &>"/dev/null"
+    sysctl -w net.ipv4.tcp_retries1=3 &>"/dev/null"
 
     # Avoid falling back to slow start after a connection goes idle
     # keeps our cwnd large with the keep alive connections (kernel > 3.6)
-    sysctl_apply_rule net.ipv4.tcp_slow_start_after_idle=0
+    sysctl -w net.ipv4.tcp_slow_start_after_idle=0 &>"/dev/null"
 
     # Allow the TCP fastopen flag to be used,
     # beware some firewalls do not like TFO! (kernel > 3.7)
-    sysctl_apply_rule net.ipv4.tcp_fastopen=3
+    sysctl -w net.ipv4.tcp_fastopen=3 &>"/dev/null"
 
     # This will enusre that immediatly subsequent connections use the new values
-    sysctl_apply_rule net.ipv4.route.flush=1
-    sysctl_apply_rule net.ipv6.route.flush=1
+    sysctl -w net.ipv4.route.flush=1 &>"/dev/null"
+    sysctl -w net.ipv6.route.flush=1 &>"/dev/null"
 
     # TCP SYN cookie protection
-    sysctl_apply_rule net.ipv4.tcp_syncookies=1
+    sysctl -w net.ipv4.tcp_syncookies=1 &>"/dev/null"
 
     # TCP rfc1337
-    sysctl_apply_rule net.ipv4.tcp_rfc1337=1
+    sysctl -w net.ipv4.tcp_rfc1337=1 &>"/dev/null"
 
     # Reverse path filtering
-    sysctl_apply_rule net.ipv4.conf.default.rp_filter=1
-    sysctl_apply_rule net.ipv4.conf.all.rp_filter=1
+    sysctl -w net.ipv4.conf.default.rp_filter=1 &>"/dev/null"
+    sysctl -w net.ipv4.conf.all.rp_filter=1 &>"/dev/null"
 
     # Log martian packets
-    sysctl_apply_rule net.ipv4.conf.default.log_martians=1
-    sysctl_apply_rule net.ipv4.conf.all.log_martians=1
+    sysctl -w net.ipv4.conf.default.log_martians=1 &>"/dev/null"
+    sysctl -w net.ipv4.conf.all.log_martians=1 &>"/dev/null"
 
     # Disable ICMP redirecting
-    sysctl_apply_rule net.ipv4.conf.all.accept_redirects=0
-    sysctl_apply_rule net.ipv4.conf.default.accept_redirects=0
-    sysctl_apply_rule net.ipv4.conf.all.secure_redirects=0
-    sysctl_apply_rule net.ipv4.conf.default.secure_redirects=0
-    sysctl_apply_rule net.ipv6.conf.all.accept_redirects=0
-    sysctl_apply_rule net.ipv6.conf.default.accept_redirects=0
-    sysctl_apply_rule net.ipv4.conf.all.send_redirects=0
-    sysctl_apply_rule net.ipv4.conf.default.send_redirects=0
+    sysctl -w net.ipv4.conf.all.accept_redirects=0 &>"/dev/null"
+    sysctl -w net.ipv4.conf.default.accept_redirects=0 &>"/dev/null"
+    sysctl -w net.ipv4.conf.all.secure_redirects=0 &>"/dev/null"
+    sysctl -w net.ipv4.conf.default.secure_redirects=0 &>"/dev/null"
+    sysctl -w net.ipv6.conf.all.accept_redirects=0 &>"/dev/null"
+    sysctl -w net.ipv6.conf.default.accept_redirects=0 &>"/dev/null"
+    sysctl -w net.ipv4.conf.all.send_redirects=0 &>"/dev/null"
+    sysctl -w net.ipv4.conf.default.send_redirects=0 &>"/dev/null"
 
     # Enable Ignoring to ICMP Request
-    sysctl_apply_rule net.ipv4.icmp_echo_ignore_all=1
+    sysctl -w net.ipv4.icmp_echo_ignore_all=1 &>"/dev/null"
 
     # Disable IPv6
-    sysctl_apply_rule net.ipv6.conf.all.disable_ipv6=1
-    sysctl_apply_rule net.ipv6.conf.default.disable_ipv6=1
+    sysctl -w net.ipv6.conf.all.disable_ipv6=1 &>"/dev/null"
+    sysctl -w net.ipv6.conf.default.disable_ipv6=1 &>"/dev/null"
 
     msg "applied sysctl rules"
 }
@@ -483,7 +485,7 @@ stop() {
     restore_torrc
 
     # restore resolv.conf
-    resolve_resolv_conf
+    restore_resolv_conf
 
     rm -f $BACKUPDIR/started
 }
@@ -495,10 +497,36 @@ chngid() {
     fi
 
     info "changing tor identity"
-    stop_service tor >"/dev/null"
+    stop_service tor &>"/dev/null"
     sleep 1
-    start_service tor >"/dev/null"
+    start_service tor &>"/dev/null"
     msg "tor identity changed"
+}
+
+chngmac() {
+    warn "changing mac addresses"
+    IFACES=$(ip -o link show | awk -F': ' '{print $2}')
+    for IFACE in $IFACES; do
+        if [ $IFACE != "lo" ]; then
+            ip link set $IFACE down &>"/dev/null"
+            macchanger -r $IFACE &>"/dev/null"
+            ip link set $IFACE up &>"/dev/null"
+        fi
+    done
+    msg "changed mac addresses"
+}
+
+rvmac() {
+    warn "reverting mac addresses"
+    IFACES=$(ip -o link show | awk -F': ' '{print $2}')
+    for IFACE in $IFACES; do
+        if [ $IFACE != "lo" ]; then
+            ip link set $IFACE down &>"/dev/null"
+            macchanger -p $IFACE &>"/dev/null"
+            ip link set $IFACE up &>"/dev/null"
+        fi
+    done
+    msg "reverted mac addresses"
 }
 
 status() {
@@ -535,13 +563,13 @@ status() {
 
 autowipe() {
     warn "enabling torctl-autowipe"
-    systemctl enable torctl-autowipe >"/dev/null"
+    systemctl enable torctl-autowipe &>"/dev/null"
     msg "enabled torctl-autowipe"
 }
 
 autostart() {
     warn "enabling torctl-autostart"
-    systemctl enable torctl-autostart >"/dev/null"
+    systemctl enable torctl-autostart &>"/dev/null"
     msg "enabled torctl-autostart"
 }
 
@@ -557,6 +585,8 @@ usage() {
     echo -e "  autostart  - start torctl at startup"
     echo -e "  ip         - get remote ip address"
     echo -e "  chngid     - change tor identity"
+    echo -e "  chngmac    - change mac addresses of all interfaces"
+    echo -e "  rvmac      - revert mac addresses of all interfaces"
     echo -e "  version    - print version of torctl and exit\n"
 }
 
@@ -589,10 +619,16 @@ main() {
         autostart
         ;;
     ip)
-        ip
+        get_ip
         ;;
     chngid)
         chngid
+        ;;
+    chngmac)
+        chngmac
+        ;;
+    rvmac)
+        rvmac
         ;;
     version)
         version

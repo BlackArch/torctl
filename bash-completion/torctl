@@ -6,12 +6,14 @@
 #autostart  - start torctl at startup.
 #ip         - get remote ip address.
 #chngid     - change tor identity.
+#chngmac    - change mac addresses of all interfaces.
+#rvmac      - revert mac addresses of all interfaces.
 #version    - print version of torctl and exit."
 
 _torctl()
 {
     local current options
-    options="start stop status restart autowipe autostart ip chngid version"
+    options="start stop status restart autowipe autostart ip chngid chngmac rvmac version"
     current="${COMP_WORDS[COMP_CWORD]}"
     COMPREPLY=($(compgen -W "${options}" -- ${current}))
 }

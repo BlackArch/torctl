@@ -26,6 +26,8 @@ Commands:
   autostart  - start torctl at startup
   ip         - get remote ip address
   chngid     - change tor identity
+  chngmac    - change mac addresses of all interfaces
+  rvmac      - revert mac addresses of all interfaces
   version    - print version of torctl and exit
 
 ```
