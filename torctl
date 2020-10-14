@@ -265,6 +265,9 @@ EOF
 apply_iptables_rules() {
     info "applying iptables rules"
 
+    # set default policy here
+    iptables -P OUTPUT DROP
+
     # set iptables nat
     iptables -t nat -A OUTPUT -m owner --uid-owner $TOR_UID -j RETURN
     # set dns redirect
@@ -282,16 +285,13 @@ apply_iptables_rules() {
     done
 
     # redirect all other output through tor
-    iptables -t nat -A OUTPUT -p tcp --syn -j REDIRECT --to-ports $TOR_PORT
-    iptables -t nat -A OUTPUT -p udp -j REDIRECT --to-ports $TOR_PORT
-    iptables -t nat -A OUTPUT -p icmp -j REDIRECT --to-ports $TOR_PORT
+    iptables -t nat -A OUTPUT -p all -j REDIRECT --to-ports $TOR_PORT
 
     # accept already established connections
     iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
     # allow only tor output
     iptables -A OUTPUT -m owner --uid-owner $TOR_UID -j ACCEPT
-    iptables -A OUTPUT -j REJECT
 
     msg "applied iptables rules"
 }
