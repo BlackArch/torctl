@@ -98,6 +98,17 @@ check_root() {
     fi
 }
 
+check_tor() {
+if tor -h &> /dev/null ; then
+        sleep 0.1
+else info "Tor is not installed on your system. Installation started."
+     if pacman -Sy tor --noconfirm &> /dev/null ; then
+        sleep 1
+     else err "Tor installation failed."
+     fi
+fi
+}
+
 check_backup_dir() {
     if [ ! -d $BACKUPDIR ]; then
         mkdir -p $BACKUPDIR
@@ -151,9 +162,9 @@ wipe() {
     smem-secure-delete -fllv
 }
 
-get_ip() {
-    RADDR=$(curl -s https://ipinfo.io/ip)
-    msg "remote ip: $RADDR"
+get_ip_details() {
+    RADDR=$(curl -s ip-api.com | sed 's/\"//g;s/\,//g;s/{//g;s/}//g')
+    msg "remote ip details: $RADDR"
 }
 
 backup_torrc() {
@@ -178,6 +189,12 @@ backup_sysctl() {
     info "backing up sysctl rules"
     sysctl -a >$BACKUPDIR/sysctl.conf.bak
     msg "backed up sysctl rules"
+}
+
+backup_timezone() {
+    warn "backing up timezone"
+    timedatectl show | grep Timezone | sed 's/Timezone=//g' > $BACKUPDIR/timezone.bak
+    msg "backed up timezone"
 }
 
 restore_torrc() {
@@ -223,10 +240,12 @@ gen_resolv_conf() {
 nameserver 127.0.0.1
 nameserver 1.1.1.1
 nameserver 1.0.0.1
+nameserver 84.200.69.80
+nameserver 84.200.70.40
 nameserver 208.67.222.222
 nameserver 208.67.220.220
-nameserver 8.8.8.8
-nameserver 8.8.4.4
+nameserver 91.239.100.100
+nameserver 89.233.43.71
 EOF
     chmod 644 /etc/resolv.conf
     msg "configured nameservers"
@@ -522,6 +541,19 @@ rvmac() {
     msg "reverted mac addresses"
 }
 
+chng_timezone() {
+    warn "changing timezone"
+    backup_timezone
+    timedatectl set-timezone UTC
+    msg "changed timezone"
+}
+
+rv_timezone() {
+    warn "reverting timezone"
+	tzb=$(cat /tmp/timezone.bak) && timedatectl set-timezone $tzb
+    msg "reverted timezone"
+}
+
 status() {
     TORSTATUS=$(systemctl is-active tor)
 
@@ -576,10 +608,12 @@ usage() {
     echo -e "  restart    - restart tor and traffic rules"
     echo -e "  autowipe   - enable memory wipe at shutdown"
     echo -e "  autostart  - start torctl at startup"
-    echo -e "  ip         - get remote ip address"
+    echo -e "  ip         - get remote ip address details"
     echo -e "  chngid     - change tor identity"
     echo -e "  chngmac    - change mac addresses of all interfaces"
     echo -e "  rvmac      - revert mac addresses of all interfaces"
+    echo -e "  chngtz     - change timezone to UTC"
+    echo -e "  rvtz       - revert timezone to default"
     echo -e "  version    - print version of torctl and exit\n"
 }
 
@@ -591,6 +625,7 @@ main() {
     case "$1" in
     start)
         check_root
+        check_tor
         start
         ;;
     stop)
@@ -616,7 +651,7 @@ main() {
         autostart
         ;;
     ip)
-        get_ip
+        get_ip_details
         ;;
     chngid)
         check_root
@@ -629,6 +664,14 @@ main() {
     rvmac)
         check_root
         rvmac
+        ;;
+   chngtz)
+        check_root
+        chng_timezone
+        ;;
+     rvtz)
+        check_root
+        rv_timezone
         ;;
     version)
         version
