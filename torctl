@@ -11,6 +11,7 @@
 #                                                                              #
 # AUTHORS                                                                      #
 # sepehrdad.dev@gmail.com                                                      #
+# omerdgn739@gmail.com                                                         #
 #                                                                              #
 ################################################################################
 
@@ -110,13 +111,14 @@ fi
 }
 
 check_virtual_machine() {
-if [ "$(dmidecode -s system-manufacturer)" == "innotek GmbH" ] &>/dev/null; then
-		warn "Virtual Machine detected" && sleep 0.1
-		if nmcli dev | grep wifi &>/dev/null; then
-				sleep 0.1
-		else
-			err "Wireless card not detected so you cannot use mac channger."  && exit 1
-		fi
+	if [ "$(dmidecode -s system-manufacturer)" == "innotek GmbH" ] &>/dev/null; then
+			warn "Virtual Machine detected" && sleep 0.1
+			if nmcli dev | grep wifi &>/dev/null; then
+					sleep 0.1
+			else
+				err "Wireless card not detected so you cannot use mac channger."  && exit 1
+			fi
+	fi
 }
 
 check_backup_dir() {
@@ -205,6 +207,12 @@ backup_timezone() {
     warn "backing up timezone"
     timedatectl show | grep Timezone | sed 's/Timezone=//g' > $BACKUPDIR/timezone.bak
     msg "backed up timezone"
+}
+
+backup_hostname() {
+    info "backing up hostname"
+    cat /etc/hostname > $BACKUPDIR/hostname.bak
+    msg "backed up hostname"
 }
 
 restore_torrc() {
@@ -564,6 +572,52 @@ rv_timezone() {
     msg "reverted timezone"
 }
 
+chng_hostname() {
+	warn "changing hostname"
+	array[0]="Windows10Enterprise "
+	array[1]="Windows10Pro"
+	array[2]="Windows10EnterpriseLTSC "
+	array[3]="Windows8.1OEM"
+	array[4]="Windows8Enterprise"
+	array[5]="Windows8.1Pro"
+	array[6]="Windows7Professional"
+	array[7]="Windows7Enterprise"
+	array[8]="Windows7Ultimate"
+	array[9]="WindowsVistaBusiness"
+	array[10]="WindowsXPProfessional"
+	array[11]="macOS11"
+	array[12]="OSX10.11"
+	array[13]="MacBook Air"
+	array[14]="MacBook"
+	array[15]="MacBook Pro"
+
+	size=${#array[@]}
+	index=$(($RANDOM % $size))
+
+	echo "127.0.0.1       localhost ${array[$index]}
+		::1             localhost ip6-localhost ip6-loopback
+		fe00::0         ip6-localnet
+		ff00::0         ip6-mcastprefix
+		ff02::1         ip6-allnodes
+		ff02::2         ip6-allrouters" > /etc/hosts 
+	echo "${array[$index]}" > /etc/hostname
+	msg "changed hostname"
+}
+
+rv_hostname() {
+    warn "reverting hostname"
+    hostname_bak=$(cat $BACKUPDIR/hostname.bak) 
+	echo "127.0.0.1       localhost $hostname_bak
+		::1             localhost ip6-localhost ip6-loopback
+		fe00::0         ip6-localnet
+		ff00::0         ip6-mcastprefix
+		ff02::1         ip6-allnodes
+		ff02::2         ip6-allrouters" > /etc/hosts 
+	echo "$hostname_bak" > /etc/hostname
+    msg "reverted hostname"
+}
+
+
 status() {
     TORSTATUS=$(systemctl is-active tor)
 
@@ -624,6 +678,8 @@ usage() {
     echo -e "  rvmac      - revert mac addresses of all interfaces"
     echo -e "  chngtz     - change timezone to UTC"
     echo -e "  rvtz       - revert timezone to default"
+    echo -e "  chnghn     - change hostname to fake hostname"
+    echo -e "  rvhn       - revert hostname to default"
     echo -e "  version    - print version of torctl and exit\n"
 }
 
@@ -683,6 +739,15 @@ main() {
      rvtz)
         check_root
         rv_timezone
+        ;;
+   chnghn)
+        check_root
+        backup_hostname
+        chng_hostname
+        ;;
+    rvhn)
+        check_root
+        rv_hostname
         ;;
     version)
         version
