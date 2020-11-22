@@ -24,10 +24,14 @@ Commands:
   restart    - restart tor and traffic rules
   autowipe   - enable memory wipe at shutdown
   autostart  - start torctl at startup
-  ip         - get remote ip address
+  ip         - get remote ip address details
   chngid     - change tor identity
   chngmac    - change mac addresses of all interfaces
   rvmac      - revert mac addresses of all interfaces
+  chngtz     - change timezone to UTC
+  rvtz       - revert timezone to default
+  chnghn     - change hostname to fake hostname
+  rvhn       - revert hostname to default
   version    - print version of torctl and exit
 
 ```
