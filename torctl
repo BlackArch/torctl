@@ -61,7 +61,7 @@ if [ -t 1 ]; then
 fi
 
 # backup dir
-BACKUPDIR="/tmp/torctl"
+BACKUPDIR="/var/lib/torctl"
 
 # print error and exit
 err() {
@@ -246,7 +246,7 @@ SocksPort 127.0.0.1:9050 IsolateClientAddr IsolateSOCKSAuth IsolateClientProtoco
 ControlPort 9051
 HashedControlPassword 16:FDE8ED505C45C8BA602385E2CA5B3250ED00AC0920FEC1230813A1F86F
 DNSPort 127.0.0.1:$TOR_DNS
-Sandbox 1
+# Sandbox 1 - tor package is not built with --enable-seccomp required to use this option.
 HardwareAccel 1
 TestSocks 1
 AllowNonRFC953Hostnames 0
@@ -586,33 +586,37 @@ usage() {
 main() {
     banner
 
-    check_backup_dir
-
     case "$1" in
     start)
         check_root
+        check_backup_dir
         start
         ;;
     stop)
         check_root
+        check_backup_dir
         stop
         ;;
     status)
         check_root
+        check_backup_dir
         status
         ;;
     restart)
         check_root
+        check_backup_dir
         stop
         sleep 1
         start
         ;;
     autowipe)
         check_root
+        check_backup_dir
         autowipe
         ;;
     autostart)
         check_root
+        check_backup_dir
         autostart
         ;;
     ip)
@@ -620,14 +624,17 @@ main() {
         ;;
     chngid)
         check_root
+        check_backup_dir
         chngid
         ;;
     chngmac)
         check_root
+        check_backup_dir
         chngmac
         ;;
     rvmac)
         check_root
+        check_backup_dir
         rvmac
         ;;
     version)
@@ -635,6 +642,7 @@ main() {
         ;;
     wipe)
         check_root
+        check_backup_dir
         wipe
         ;;
     *)
