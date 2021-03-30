@@ -15,7 +15,7 @@
 ################################################################################
 
 # torctl.sh version
-VERSION="torctl.sh v0.5.6"
+VERSION="torctl.sh v0.5.7"
 
 # exclude locals
 TOR_EXCLUDE="192.168.0.0/16 172.16.0.0/12 10.0.0.0/8"
