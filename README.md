@@ -11,7 +11,7 @@ change tor entry,exite nodes --> torctl
 
 ```
 $ torctl
---==[ torctl.sh by blackarch.org ]==--
+--==[ torctl.sh ]==--
 
 Usage: torctl.sh COMMAND
 
