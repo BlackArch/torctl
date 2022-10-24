@@ -257,6 +257,9 @@ MaxCircuitDirtiness 600
 MaxClientCircuitsPending 48
 UseEntryGuards 1
 EnforceDistinctSubnets 1
+HashedControlPassword 16:A1E1BE479320F201609518581FEE27B617B353D7223B6F00E800B463D0
+EntryNodes {CH},{DE},{AT},{IT},{FR} StrictNodes 1
+ExitNodes {CH},{DE},{AT},{IT},{FR} StrictNodes 1
 EOF
     chmod 644 ${TORRC}
     msg "configured tor"
@@ -490,9 +493,10 @@ chngid() {
     fi
 
     info "changing tor identity"
-    stop_service tor &>"/dev/null"
-    sleep 1
-    start_service tor &>"/dev/null"
+    (echo authenticate '""'; echo signal newnym; echo quit) | nc localhost 9051
+    #stop_service tor &>"/dev/null"
+    #sleep 1
+    #start_service tor &>"/dev/null"
     msg "tor identity changed"
 }
 
