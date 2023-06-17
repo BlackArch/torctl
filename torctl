@@ -15,7 +15,7 @@
 ################################################################################
 
 # torctl.sh version
-VERSION="torctl.sh v0.5.7"
+VERSION="torctl.sh v0.6.0"
 
 # exclude locals
 TOR_EXCLUDE="192.168.0.0/16 172.16.0.0/12 10.0.0.0/8"
@@ -152,7 +152,7 @@ wipe() {
 }
 
 get_ip() {
-    RADDR=$(curl -s https://ipinfo.io/ip)
+    RADDR=$(curl -s https://checkip.amazonaws.com/)
     msg "remote ip: $RADDR"
 }
 
