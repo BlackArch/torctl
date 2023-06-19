@@ -152,7 +152,7 @@ wipe() {
 }
 
 get_ip() {
-    RADDR=$(curl -s https://ipinfo.io/ip)
+    RADDR=$(curl -s https://checkip.amazonaws.com/)
     msg "remote ip: $RADDR"
 }
 

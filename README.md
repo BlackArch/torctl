@@ -32,6 +32,12 @@ Commands:
 
 ```
 
+## GUI
+
+You must run the script with root permissions
+
+![GUI](GUI/gui.png)
+
 ## Get Involved
 
 You can get in touch with the BlackArch Linux team. Just check out the following:
