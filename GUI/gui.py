@@ -8,11 +8,6 @@ import os
 import re
 
 
-# Root permissions check
-if os.geteuid() != 0:
-    messagebox.showinfo("Popup", "You must run the app with sudo permissions.")
-    exit()
-
 MAN = """--==[ torctl.sh by blackarch.org ]==--
 
 Usage: torctl.sh COMMAND
@@ -71,46 +66,46 @@ def get_update_lines(output: str):
 
 def run_a_command(description:str, command: str):
     info_panel.configure(state="normal")
-    info_panel.insert(tk.END, f"\n\n{description}\n")
+    info_panel.insert(tk.END, f"{description}\n")
     get_update_lines(subprocess.check_output(f"/usr/local/bin/torctl {command}", shell=True))
     info_panel.configure(state="disabled")
 
 def initial_state():
-    run_a_command("Running...", "ip")
+    run_a_command("Your Actual IP: ", "ip")
     run_a_command("...", "status")
 
 def start():
-    run_a_command("START", "start")
+    run_a_command("\nSTART", "start")
 
 def stop():
-    run_a_command("STOP", "stop")
+    run_a_command("\nSTOP", "stop")
 
 def status():
-    run_a_command("STATUS", "status")
+    run_a_command("\nSTATUS", "status")
 
 def restart():
-    run_a_command("RESTART", "restart")
+    run_a_command("\nRESTART", "restart")
 
 def autowipe():
-    run_a_command("AUTO WIPE", "autowipe")
+    run_a_command("\nAUTO WIPE", "autowipe")
 
 def autostart():
-    run_a_command("AUTO START", "autostart")
+    run_a_command("\nAUTO START", "autostart")
 
 def ip():
-    run_a_command("WHAT IS MY IP?", "ip")
+    run_a_command("\nYour Actual IP: ", "ip")
 
 def chngid():
-    run_a_command("CHANGE TOR IDENTITY", "chngid")
+    run_a_command("\nCHANGE TOR IDENTITY", "chngid")
 
 def chngmac():
-    run_a_command("CHANGE MAC", "chngmac")
+    run_a_command("\nCHANGE MAC", "chngmac")
 
 def rvmac():
-    run_a_command("REVERD MAC", "rvmac")
+    run_a_command("\nREVERD MAC", "rvmac")
 
 def version():
-    run_a_command("VERSION", "version")
+    run_a_command("\nVERSION", "version")
 
 def man():
     messagebox.showinfo("Popup", MAN)
