@@ -8,7 +8,7 @@ import os
 import re
 
 
-# Verifica se lo script è stato eseguito con i permessi di root
+# Root permissions check
 if os.geteuid() != 0:
     messagebox.showinfo("Popup", "You must run the app with sudo permissions.")
     exit()
@@ -49,11 +49,15 @@ GUI Developer: Aleff (github.com/aleff-github)
 
 Licence: GPLv3"""
 
-CONTACT = """Github: https://github.com/aleff-github
+CONTACT = """Github: https://github.com/BlackArch
 
-Instagram: https://www.instagram.com/alessandro_greco_aka_aleff/
+Twitter: https://twitter.com/blackarchlinux/
 
-Linkeding: https://www.linkedin.com/in/alessandro-greco-aka-aleff/"""
+YouTube: https://www.youtube.com/channel/UChw5hByy70ey2F7QeLEGICQ
+
+Matrix: https://matrix.to/#/#BlackArch:matrix.org
+
+Blog and News: https://www.blackarch.org/blog.html"""
 
 def tmp():
     print("ok")
@@ -65,75 +69,48 @@ def get_update_lines(output: str):
             info_panel.insert(tk.END, line+"\n")
     info_panel.see(tk.END)
 
+def run_a_command(description:str, command: str):
+    info_panel.configure(state="normal")
+    info_panel.insert(tk.END, f"\n\n{description}\n")
+    get_update_lines(subprocess.check_output(f"/usr/local/bin/torctl {command}", shell=True))
+    info_panel.configure(state="disabled")
+
 def initial_state():
-    get_update_lines(subprocess.check_output("sudo torctl ip", shell=True))
-    get_update_lines(subprocess.check_output("sudo torctl status", shell=True))
+    run_a_command("Running...", "ip")
+    run_a_command("...", "status")
 
 def start():
-    info_panel.configure(state="normal")
-    info_panel.insert(tk.END, "\n\nSTART\n")
-    get_update_lines(subprocess.check_output("sudo torctl start", shell=True))
-    info_panel.configure(state="disabled")
+    run_a_command("START", "start")
 
 def stop():
-    info_panel.configure(state="normal")
-    info_panel.insert(tk.END, "\n\nSTOP\n")
-    get_update_lines(subprocess.check_output("sudo torctl stop", shell=True))
-    info_panel.configure(state="disabled")
+    run_a_command("STOP", "stop")
 
 def status():
-    info_panel.configure(state="normal")
-    info_panel.insert(tk.END, "\n\nSTATUS\n")
-    get_update_lines(subprocess.check_output("sudo torctl status", shell=True))
-    info_panel.configure(state="disabled")
+    run_a_command("STATUS", "status")
 
 def restart():
-    info_panel.configure(state="normal")
-    info_panel.insert(tk.END, "\n\nRESTART\n")
-    get_update_lines(subprocess.check_output("sudo torctl restart", shell=True))
-    info_panel.configure(state="disabled")
+    run_a_command("RESTART", "restart")
 
 def autowipe():
-    info_panel.configure(state="normal")
-    info_panel.insert(tk.END, "\n\nAUTO WIPE\n")
-    get_update_lines(subprocess.check_output("sudo torctl autowipe", shell=True))
-    info_panel.configure(state="disabled")
+    run_a_command("AUTO WIPE", "autowipe")
 
 def autostart():
-    info_panel.configure(state="normal")
-    info_panel.insert(tk.END, "\n\nAUTO START\n")
-    get_update_lines(subprocess.check_output("sudo torctl autostart", shell=True))
-    info_panel.configure(state="disabled")
+    run_a_command("AUTO START", "autostart")
 
 def ip():
-    info_panel.configure(state="normal")
-    info_panel.insert(tk.END, "\n\nWHAT IS MY IP?\n")
-    get_update_lines(subprocess.check_output("sudo torctl ip", shell=True))
-    info_panel.configure(state="disabled")
+    run_a_command("WHAT IS MY IP?", "ip")
 
 def chngid():
-    info_panel.configure(state="normal")
-    info_panel.insert(tk.END, "\n\nCHANGE TOR IDENTITY\n")
-    get_update_lines(subprocess.check_output("sudo torctl chngid", shell=True))
-    info_panel.configure(state="disabled")
+    run_a_command("CHANGE TOR IDENTITY", "chngid")
 
 def chngmac():
-    info_panel.configure(state="normal")
-    info_panel.insert(tk.END, "\n\nCHANGE MAC\n")
-    get_update_lines(subprocess.check_output("sudo torctl chngmac", shell=True))
-    info_panel.configure(state="disabled")
+    run_a_command("CHANGE MAC", "chngmac")
 
 def rvmac():
-    info_panel.configure(state="normal")
-    info_panel.insert(tk.END, "\n\nREVERD MAC\n")
-    get_update_lines(subprocess.check_output("sudo torctl rvmac", shell=True))
-    info_panel.configure(state="disabled")
+    run_a_command("REVERD MAC", "rvmac")
 
 def version():
-    info_panel.configure(state="normal")
-    info_panel.insert(tk.END, "\n\nVERSION\n")
-    get_update_lines(subprocess.check_output("sudo torctl version", shell=True))
-    info_panel.configure(state="disabled")
+    run_a_command("VERSION", "version")
 
 def man():
     messagebox.showinfo("Popup", MAN)
@@ -146,7 +123,7 @@ def contact():
 
 # Create main window
 window = tk.Tk()
-window.title("TORCTL by Aleff")
+window.title("torctl - Redirect yout traffic")
 
 # Apply a theme from the ttkthemes library
 style = ThemedStyle(window)
@@ -156,7 +133,6 @@ style.set_theme("breeze")
 info_panel = tk.Text(window, height=10, width=50)
 info_panel.configure(font=("Linux Libertine", 14))
 initial_state()
-info_panel.configure(state="disabled")
 info_panel.grid(row=0, column=0, columnspan=3, padx=10, pady=10)
 
 # Create the menu bar
