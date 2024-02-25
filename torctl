@@ -418,7 +418,9 @@ apply_sysctl_rules() {
 start() {
     # check if started
     if is_started; then
-        err "torctl is already started"
+        # err "torctl is already started"
+        # Fix torctl-autostart error 'already started'
+        stop
     fi
 
     # backup torrc
